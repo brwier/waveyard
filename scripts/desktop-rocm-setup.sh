@@ -321,15 +321,28 @@ fi
 stage "Verify ROCm sees the GPU"
 export PATH="$PATH:/opt/rocm/bin"
 if ! command -v rocminfo >/dev/null 2>&1; then warn "rocminfo not found on PATH; is /opt/rocm/bin present?"; exit 1; fi
-GPU_NAME=$(rocminfo 2>/dev/null | grep -i 'Marketing Name' | grep -vi 'ryzen\|cpu' | head -1 | sed 's/.*:\s*//')
-GFX=$(rocminfo 2>/dev/null | grep -io 'gfx[0-9a-f]*' | sort -u | grep -v gfx000 | head -1)
-ROCM_INSTALLED=$(dpkg -s rocm-core 2>/dev/null | awk '/^Version/{print $2}')
+# `|| true` on each: under set -e a pipeline whose grep finds nothing would
+# otherwise exit the script silently before the warning below is printed.
+ROCMINFO_OUT=$(timeout 60 rocminfo 2>&1) && ROCMINFO_RC=0 || ROCMINFO_RC=$?
+GPU_NAME=$(printf '%s\n' "$ROCMINFO_OUT" | grep -i 'Marketing Name' | grep -vi 'ryzen\|cpu' | head -1 | sed 's/.*:\s*//' || true)
+GFX=$(printf '%s\n' "$ROCMINFO_OUT" | grep -io 'gfx[0-9a-f]*' | sort -u | grep -v gfx000 | head -1 || true)
+ROCM_INSTALLED=$(dpkg -s rocm-core 2>/dev/null | awk '/^Version/{print $2}' || true)
 say "rocminfo GPU:   ${GPU_NAME:-NOT FOUND}"
 say "gfx target:     ${GFX:-NOT FOUND}"
 say "rocm-core:      ${ROCM_INSTALLED:-unknown}"
 say "amd-smi:        $(amd-smi version 2>/dev/null | head -1 || echo 'amd-smi not available')"
 if [[ -z "$GPU_NAME" ]]; then
-  warn "ROCm does not see the GPU. AMD's FAQ: check 'grep amdgpu /etc/modprobe.d/*' for a denylist, and 'dmesg | grep amdgpu' for driver errors."
+  warn "ROCm does not see the GPU. Diagnostics (paste these to your agent):"
+  say "rocminfo exit code: $ROCMINFO_RC (124 means it hung for 60 s)"
+  say "rocminfo output, first 15 lines:"
+  printf '%s\n' "$ROCMINFO_OUT" | head -15 | sed 's/^/    /'
+  say "groups:  $(id -nG)"
+  say "/dev/kfd: $(ls -l /dev/kfd 2>&1)"
+  say "kernel messages mentioning amdgpu or kfd, last 15:"
+  (sudo dmesg 2>/dev/null || true) | grep -iE 'amdgpu|kfd' | tail -15 | sed 's/^/    /'
+  say "AMD's FAQ: check 'grep amdgpu /etc/modprobe.d/*' for a denylist. If the in-tree driver on"
+  say "kernel $KERNEL does not expose /dev/kfd, the fallback is: sudo apt install linux-generic,"
+  say "reboot into the 6.8 kernel, and rerun this wizard so it installs amdgpu-dkms."
   exit 1
 fi
 write_env GPU_NAME "$GPU_NAME"
