@@ -136,12 +136,17 @@ Claim the ticket (`gh issue edit 7 --add-assignee @me`). Load the
 `Simulation` description, a `Plan` of plain arrays, a pure `step(state,
 plan, n) -> state`, a Gaussian point source, a time monitor, a simple PML.
 Physics reference for the 1D update and PML: Schneider's free book, chapters
-3 and 11. The owner keeps PDFs at `learning/reference/books/schneider-ufdtd.pdf`
-and `learning/reference/books/taflove-hagness-3e.pdf`; read Schneider's two
-chapters from the PDF when present and cite equation and figure numbers in
-the prototype README and later lessons. When absent, use the links in
-`docs/research/curriculum-sources.md`. Taflove is copyrighted: cite it,
-never copy from it, and never commit either file.
+3 and 11. The owner keeps PDFs in `learning/reference/books/`:
+`schneider-ufdtd.pdf`, and for now `taflove-1e.pdf`, the 1995 first edition
+of Taflove. The third edition the spec cites (§17, ADE media §9, CPML §7.9)
+arrives later as `taflove-hagness-3e.pdf`; the first edition predates CPML
+and ADE as the spec uses them, so treat it as background only and cite
+chapter numbers from the third edition when that file is present. Read
+Schneider's two chapters from the PDF when present and cite equation and
+figure numbers in the prototype README and later lessons. When absent, use
+the links in `docs/research/curriculum-sources.md`. Taflove is
+copyrighted: cite it, never copy from it, and never commit any of these
+files.
 
 Write `prototypes/README.md` with the four questions from the ticket body,
 and under each, what the prototype *shows*: where each piece of state lives,
