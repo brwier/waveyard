@@ -15,3 +15,7 @@ learning/
 # Meep / conda environments, caches
 .conda/
 *.npz
+
+# Agent worktrees and local Claude Code state
+.claude/worktrees/
+.claude/settings.local.json

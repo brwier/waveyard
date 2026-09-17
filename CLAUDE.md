@@ -20,3 +20,6 @@ wayfinder map (issue labelled `wayfinder:map`) for what is decided.
 - Introduce each library (pydantic, xarray, array-api-compat, torch) only at
   the milestone where it solves a felt problem, with a lesson first.
 - Python 3.12 via `uv`. Meep lives in its own conda environment.
+- Version control is a learning objective. The owner runs git and GitHub
+  operations (branch, commit, push, PR, merge) with the agent explaining.
+  Agents do not commit or push on the owner's behalf unless asked.
