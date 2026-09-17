@@ -311,9 +311,11 @@ if [[ ! -f /etc/ld.so.conf.d/rocm.conf ]]; then
   printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf >/dev/null
   sudo ldconfig
 fi
-USER_GROUPS=" $(id -nG "$LOGNAME") "
+# `id -nG` with no name reports the running session's groups; with a name it
+# reads the system database, which already lists groups usermod just added.
+USER_GROUPS=" $(id -nG) "
 if [[ "$USER_GROUPS" != *" render "* || "$USER_GROUPS" != *" video "* ]]; then
-  warn "Your login session does not yet carry the render/video groups."
+  warn "Your login session does not yet carry the render/video groups (they apply at next login)."
   reboot_and_rerun
 fi
 
