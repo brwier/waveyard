@@ -1,0 +1,21 @@
+# Meep reference-solver environment for waveyard.
+#
+# Meep is conda-forge only (no PyPI wheel or sdist), so it cannot live in the
+# project's uv venv: it gets its own conda environment. See
+# docs/research/meep-environment.md and GitHub issue #11.
+#
+#   ~/miniforge3/bin/mamba env create -f envs/meep.yml
+#   conda run -n waveyard-meep python envs/meep_smoke_2d.py
+#
+# Python 3.13 is the ceiling: the conda-forge pymeep feedstock has no 3.14
+# build (issue #4). The nompi variant is deliberate — the validation runs in
+# spec 11.4 (I2, I4) are single-process 2D/3D comparisons, and nompi avoids
+# pulling mpich into the environment.
+name: waveyard-meep
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - pymeep=1.34.*=nompi_*
+  - numpy
+  - matplotlib
