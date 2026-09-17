@@ -219,7 +219,9 @@ KERNEL=$(uname -r)
 say "OS:     $OS_DESC"
 say "Kernel: $KERNEL"
 if [[ "$OS_DESC" != *"24.04"* ]]; then warn "Expected Ubuntu 24.04.x; ROCm ${ROCM_VER} supports 24.04.4 with kernel 6.8 GA."; fi
-if [[ "$KERNEL" != 6.8.* ]]; then warn "Kernel is not 6.8 GA. ROCm ${ROCM_VER} lists 6.8 (GA) and 6.17 (HWE) for 24.04.4; anything else is untested."; fi
+if [[ "$KERNEL" == 6.8.* ]]; then note "Kernel 6.8 is the 24.04 GA kernel: supported by ROCm ${ROCM_VER}."
+elif [[ "$KERNEL" == 6.17.* ]]; then note "Kernel 6.17 is the 24.04.4 HWE kernel (what the 24.04.4 desktop ISO installs): supported by ROCm ${ROCM_VER}."
+else warn "Kernel is neither 6.8 (GA) nor 6.17 (HWE). ROCm ${ROCM_VER} lists only those two for 24.04.4; anything else is untested."; fi
 if lspci | grep -qi 'VGA.*AMD\|Display.*AMD\|Navi'; then
   say "GPU:    $(lspci | grep -iE 'VGA|Display' | grep -i AMD | head -1 | cut -d: -f3-)"
 else
