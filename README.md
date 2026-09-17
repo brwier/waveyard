@@ -34,13 +34,25 @@ because it is how you know the code is right.
 
 ## Development
 
+Python 3.12 via [`uv`](https://docs.astral.sh/uv/). From a fresh clone
+(commands from `docs/research/python-deps.md`; note `uv sync` is exact, so
+name every extra you want in one call):
+
 ```sh
-uv sync --extra dev
-uv run pytest
+uv venv --python 3.12
+uv sync --extra core --extra gds --extra wgpu --extra dev
+uv sync --extra torch          # pulls torch==2.14.0+cpu via the pinned index above
 ```
 
+The everyday loop is what CI runs: `uv sync --extra core --extra dev`, then
+`uv run ruff check .`, `uv run mypy src`, `uv run pytest -m unit`.
+
+The desktop installs torch from the ROCm index with `uv pip install torch
+--index-url https://download.pytorch.org/whl/rocm7.2` after every `uv sync`,
+because `uv sync` prunes anything that is not in the lockfile.
+
 Linux is the development target. GPU work targets an RX 9070 XT under
-ROCm on Ubuntu 24.04.
+ROCm 7.2 on Ubuntu 24.04.
 
 ## License
 

@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Brian Wier" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
 dependencies = []
 
 [build-system]
@@ -17,4 +17,50 @@ build-backend = "uv_build"
 Repository = "https://github.com/brwier/waveyard"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "mypy"]
+core = ["numpy>=2", "scipy", "pydantic>=2", "xarray", "matplotlib", "array-api-compat"]
+gds  = ["opencv-python-headless", "gdsfactory>=9", "gdstk"]
+torch = ["torch"]
+wgpu = ["wgpu"]
+dev  = ["pytest", "ruff", "mypy"]
+
+# Pin torch to the CPU wheel index by default. Swap the url to a ROCm index
+# later (e.g. https://download.pytorch.org/whl/rocm7.2, verified today to carry
+# the same torch==2.14.0 release with cp312/cp313/cp314 wheels) — no
+# requires-python change needed for that swap.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+# docs/ holds prose with illustrative code blocks, not code to format.
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+# Ruff's defaults (E, F) plus bugbear, pyupgrade, ruff-specific rules and isort.
+select = ["E", "F", "B", "UP", "RUF", "I"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+# Test tiers from docs/spec/v0.1.md §11.
+markers = [
+    "unit: fast, isolated tests of one unit (spec §11.1)",
+    "analytic: FDTD runs checked against closed-form results (spec §11.2, A1–A8)",
+    "integration: end-to-end device runs and cross-tool comparisons (spec §11.4, I1–I5)",
+    "parity: the same plan on two backends must agree (spec §11.5, P1–P4)",
+    "meep: needs the conda Meep environment; run locally only",
+    "gpu: needs a ROCm or CUDA device; run locally only",
+    "slow: takes more than a minute; excluded from the default CI run",
+    "bench: benchmarks that append to benchmarks/results.jsonl; run manually",
+]
