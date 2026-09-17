@@ -1,0 +1,20 @@
+[project]
+name = "waveyard"
+version = "0.1.0"
+description = "A small, understandable electromagnetic simulator for photonic integrated circuits, built to learn how such software is structured."
+readme = "README.md"
+authors = [
+    { name = "Brian Wier" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[project.urls]
+Repository = "https://github.com/brwier/waveyard"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
