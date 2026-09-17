@@ -221,9 +221,14 @@ say "Kernel: $KERNEL"
 if [[ "$OS_DESC" != *"24.04"* ]]; then warn "Expected Ubuntu 24.04.x; ROCm ${ROCM_VER} supports 24.04.4 with kernel 6.8 GA."; fi
 if [[ "$KERNEL" == 6.8.* ]]; then note "Kernel 6.8 is the 24.04 GA kernel: supported by ROCm ${ROCM_VER}."
 elif [[ "$KERNEL" == 6.17.* ]]; then note "Kernel 6.17 is the 24.04.4 HWE kernel (what the 24.04.4 desktop ISO installs): supported by ROCm ${ROCM_VER}."
-else warn "Kernel is neither 6.8 (GA) nor 6.17 (HWE). ROCm ${ROCM_VER} lists only those two for 24.04.4; anything else is untested."; fi
-if lspci | grep -qi 'VGA.*AMD\|Display.*AMD\|Navi'; then
-  say "GPU:    $(lspci | grep -iE 'VGA|Display' | grep -i AMD | head -1 | cut -d: -f3-)"
+else warn "Kernel is neither 6.8 (GA) nor 6.17 (HWE). ROCm ${ROCM_VER} lists only those two for 24.04.4. The wizard will skip AMD's DKMS driver and rely on this kernel's in-tree amdgpu, which supports RDNA4 from 6.13 onward."; fi
+# Command substitution, not `cmd | grep -q`: under pipefail a quitting grep -q
+# gives the producer SIGPIPE and the test reads as "not found".
+# Class 03xx is any display controller; vendor 1002 is AMD. An old pci.ids
+# shows a new card as "Device [1002:7550]", so match on ids, not names.
+GPU_LINE=$(lspci -nn -d 1002: 2>/dev/null | grep -E '\[03[0-9a-f]{2}\]' | head -1 || true)
+if [[ -n "$GPU_LINE" ]]; then
+  say "GPU:    ${GPU_LINE#*: }"
 else
   warn "No AMD GPU found by lspci. Stop here and check the card is seated and the display cable is on it."
   exit 1
@@ -260,8 +265,13 @@ fi
 
 # ── 4. Kernel driver (DKMS) ───────────────────────────────────────────────
 stage "AMD kernel driver (amdgpu-dkms)"
-if dpkg -s amdgpu-dkms >/dev/null 2>&1 && lsmod | grep -q '^amdgpu'; then
+if dpkg -s amdgpu-dkms >/dev/null 2>&1 && [[ -d /sys/module/amdgpu ]]; then
   note "amdgpu-dkms installed and the amdgpu module is loaded; skipping"
+elif [[ "$KERNEL" != 6.8.* && "$KERNEL" != 6.17.* && -d /sys/module/amdgpu ]]; then
+  note "Kernel $KERNEL is newer than ROCm ${ROCM_VER}'s DKMS driver targets and its in-tree amdgpu is already loaded."
+  say "Skipping amdgpu-dkms: it is built against 6.8 and 6.17 and would likely fail to compile here."
+  say "ROCm userspace runs on the in-tree driver. If 'Verify ROCm sees the GPU' fails later, the"
+  say "fallback is: sudo apt install linux-generic, reboot into the 6.8 kernel, and rerun this wizard."
 else
   say "AMD's quick start installs its own kernel module via DKMS. Secure Boot is OFF on this"
   say "machine (verified from Windows), so no module signing is needed."
@@ -301,7 +311,8 @@ if [[ ! -f /etc/ld.so.conf.d/rocm.conf ]]; then
   printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf >/dev/null
   sudo ldconfig
 fi
-if ! id -nG "$LOGNAME" | grep -qw render || ! id -nG "$LOGNAME" | grep -qw video; then
+USER_GROUPS=" $(id -nG "$LOGNAME") "
+if [[ "$USER_GROUPS" != *" render "* || "$USER_GROUPS" != *" video "* ]]; then
   warn "Your login session does not yet carry the render/video groups."
   reboot_and_rerun
 fi
